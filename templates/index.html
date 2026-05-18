@@ -12,6 +12,9 @@
 <body>
 
     <h1>Cloud Image Gallery</h1>
+
+    <h2>Total Images: {{ total }}</h2>
+
     <button onclick="toggleMode()">Dark Mode</button>
 
     <form method="POST" enctype="multipart/form-data">
@@ -21,6 +24,7 @@
         <button type="submit">Upload</button>
 
     </form>
+
     <form method="GET">
 
         <input type="text" name="search" placeholder="Search image">
@@ -35,20 +39,23 @@
 
         <div>
 
-            <img src="{{ url_for('static', filename='uploads/' + image) }}">
-            <h3>{{ image }}</h3>
+            <img src="{{ image.url }}">
+
+            <h3>{{ image.name }}</h3>
+
             <p>
 
-                <a href="{{ cloud_urls[image] }}" target="_blank">
+                <a href="{{ image.url }}" target="_blank">
 
                     Open Cloud Image
 
                 </a>
 
             </p>
-            <br><br>
 
-            <a href="{{ url_for('static', filename='uploads/' + image) }}" download>
+            <br>
+
+            <a href="{{ image.url }}" download>
 
                 <button>Download</button>
 
@@ -56,7 +63,8 @@
 
             <br><br>
 
-            <a href="{{ url_for('delete_image', filename=image) }}">
+            <a href="{{ url_for('delete_image',
+                         filename=image.name) }}">
 
                 <button>Delete</button>
 
@@ -67,6 +75,7 @@
         {% endfor %}
 
     </div>
+
     <script>
 
         function toggleMode() {

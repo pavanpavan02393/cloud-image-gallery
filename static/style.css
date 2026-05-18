@@ -78,3 +78,18 @@ button:hover {
 .dark .gallery h3 {
     color: white;
 }
+
+.gallery a {
+    text-decoration: none;
+    color: blue;
+    font-weight: bold;
+}
+
+.dark .gallery a {
+    color: lightblue;
+}
+
+.gallery img:hover {
+    transform: scale(1.03);
+    transition: 0.3s;
+}

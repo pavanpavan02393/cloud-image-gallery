@@ -1,77 +1,65 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect
+from supabase import create_client, Client
 import os
-import cloudinary
-import cloudinary.uploader
 
 app = Flask(__name__)
-cloudinary.config(
-    cloud_name="ddt9zxomn",
-    api_key="927452581847582",
-    api_secret="hGXneLpLoM6o0OBHXwb6pyChbVM"
-)
 
-UPLOAD_FOLDER = 'static/uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+# Supabase Config
+url = "https://tjzxyupwbhwkkccxulwj.supabase.co"
+key = "sb_publishable_zAGtAuYOhsdW6tMcWmC0qA_axxjvXyy"
 
+supabase: Client = create_client(url, key)
+
+BUCKET_NAME = "gallery"
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
 
+    # Upload Image
     if request.method == 'POST':
 
         file = request.files['image']
 
         if file:
-            upload_result = cloudinary.uploader.upload(file)
-            
 
-            cloud_link = upload_result['secure_url']
+            file_data = file.read()
 
-            print("Cloud Image URL:", cloud_link)
+            supabase.storage.from_(BUCKET_NAME).upload(
+                file.filename,
+                file_data,
+                {"content-type": file.content_type}
+            )
 
-            with open("cloud_links.txt", "a") as f:
-                f.write(file.filename + "|" + cloud_link + "\n")
+        return redirect('/')
 
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    # Get Images
+    files = supabase.storage.from_(BUCKET_NAME).list()
 
-            file.seek(0)
+    image_urls = []
 
-            file.save(filepath)
-            
+    for file in files:
 
-    search = request.args.get('search')
+        filename = file['name']
 
-    images = os.listdir(app.config['UPLOAD_FOLDER'])
+        image_url = f"{url}/storage/v1/object/public/{BUCKET_NAME}/{filename}"
 
-    if search:
-        images = [img for img in images if search.lower() in img.lower()]
+        image_urls.append({
+            "name": filename,
+            "url": image_url
+        })
 
-    cloud_urls = {}
-
-    if os.path.exists("cloud_links.txt"):
-
-        with open("cloud_links.txt", "r") as f:
-
-            for line in f:
-
-                name, url = line.strip().split("|")
-
-                cloud_urls[name] = url
-    return render_template('index.html',
-                           images=images,
-                           search=search,
-                           total=len(images),
-                            cloud_urls=cloud_urls)
+    return render_template(
+        'index.html',
+        images=image_urls,
+        total=len(image_urls)
+    )
 
 @app.route('/delete/<filename>')
 def delete_image(filename):
 
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    supabase.storage.from_(BUCKET_NAME).remove([filename])
 
-    if os.path.exists(filepath):
-        os.remove(filepath)
-
-    return redirect(url_for('home'))
+    return redirect('/')
 
 
 if __name__ == '__main__':
